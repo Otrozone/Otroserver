@@ -1,0 +1,24 @@
+[Unit]
+Description=Otroserver
+After=network.target
+
+[Service]
+# User and group to run the service
+User=pi
+Group=pi
+
+# Working directory where the script is located
+WorkingDirectory=/home/pi/Otroserver
+
+# Command to execute the script (ensure full paths are used)
+ExecStart=/home/pi/Otroserver/otroserver.sh
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Environment variables (if necessary)
+Environment="FLASK_ENV=production"
+
+[Install]
+WantedBy=multi-user.target
