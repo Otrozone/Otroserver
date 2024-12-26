@@ -1,11 +1,21 @@
-# http://10.0.1.100:5005/gpio/set?pin=6&state=HIGH
+# GPIO control
+# http://hostname:5005/gpio/set?pin=6&state=HIGH
+
+# Camera feed (can be used for Octoprint)
+# http://otrozone:5005/camera_feed
 
 from flask import Flask, request, jsonify, send_from_directory, Response
+from flask_cors import CORS
 from picamera2 import Picamera2
 from gpiozero import LED
 import cv2
+import socket
+import struct
 
 app = Flask(__name__)
+# CORS(app) # Allow all endpoints
+CORS(app, resources={r"/*": {"origins": "*"}})
+# CORS(app, resources={r"/camera_feed": {"origins": "*"}})
 
 # Keep the instances, so it keeps its state (HIGH/LOW) active
 # and do not restarts the states when the instance is released
@@ -63,9 +73,9 @@ def camera_feed():
 def camera():
     return send_from_directory('static', 'camera.html')
 
-@app.route('/')
+@app.route('/gpio/switches')
 def serve_static_html():
-    return send_from_directory('static', 'index.html')
+    return send_from_directory('static', 'switches.html')
 
 @app.route('/gpio/get', methods=['GET'])
 def gpio_get():
@@ -78,7 +88,8 @@ def gpio_get():
     
     return jsonify({'state': state})
 
-@app.route('/gpio/set', methods=['GET'])
+# Let's keep it simple and use get method even for set operation
+@app.route('/gpio/set', methods=['GET']) 
 def gpio_set():
     try:
         pin = int(request.args.get('pin'))
@@ -94,11 +105,43 @@ def gpio_set():
             gpio_pins[pin].off()
             return jsonify({'pin': pin, 'state': state}), 200
         else:
-            return jsonify({'error': 'Invalid state. Use "on" or "off".'}), 400
+            return jsonify({'error': 'Invalid state. Use "HIGH" or "LOW".'}), 400
+        
     except ValueError:
         return jsonify({'error': 'Invalid pin number or state.'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+def send_magic_packet(mac):
+    if len(mac) == 17:
+        sep = mac[2]
+        mac_bytes = bytes.fromhex(mac.replace(sep, ''))
+    elif len(mac) == 12:
+        mac_bytes = bytes.fromhex(mac)
+    else:
+        raise ValueError('Invalid MAC address format')
+
+    magic_packet = b'\xff' * 6 + mac_bytes * 16
+
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.sendto(magic_packet, ('<broadcast>', 9))
+
+@app.route('/wol/send', methods=['GET'])
+def wol_send():
+    try:
+        mac = request.args.get('mac')
+        if not mac:
+            return jsonify({'error': 'MAC address is required.'}), 400
+
+        send_magic_packet(mac)
+        return jsonify({'message': f'Magic packet sent to {mac}'}), 200
+
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5005)
