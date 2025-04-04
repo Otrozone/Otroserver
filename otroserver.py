@@ -4,6 +4,11 @@
 # Camera feed (can be used for Octoprint)
 # http://otrozone:5005/camera_feed
 
+# References
+# https://RandomNerdTutorials.com/raspberry-pi-mjpeg-streaming-web-server-picamera2/
+# https://picamera.readthedocs.io/en/release-1.13/recipes2.html
+
+
 from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 from picamera2 import Picamera2
@@ -11,6 +16,7 @@ from gpiozero import LED
 import cv2
 import socket
 import struct
+from otroconfig import otroconfig
 
 app = Flask(__name__)
 # CORS(app) # Allow all endpoints
@@ -29,7 +35,11 @@ def start_camera():
     if picam2 is None:
         picam2 = Picamera2()
         print(picam2.sensor_modes)
-        config = picam2.create_video_configuration({"size": (1640, 1232), "format": "RGB888"})
+        otroconfig_cam = otroconfig["camera"]
+        capture_width = otroconfig_cam["capture_width"]
+        capture_height = otroconfig_cam["capture_height"]
+        capture_format = otroconfig_cam["capture_format"]
+        config = picam2.create_video_configuration({"size": (capture_width, capture_height), "format": capture_format})
         picam2.configure(config)
     picam2.start()
     print("Camera started.")
@@ -44,12 +54,21 @@ def gen_frames():
     try:
         while True:
             frame = picam2.capture_array()
-            # frame = cv2.resize(frame, (640, 480))
-            frame = cv2.resize(frame, (800, 600))
+            otroconfig_pp = otroconfig["postprocessing"]
+            if (otroconfig_pp["resize"]):
+                resize_width = otroconfig_pp["resize_width"]
+                resize_height = otroconfig_pp["resize_height"]
+                frame = cv2.resize(frame, (resize_width, resize_height))
+            
+            if (otroconfig_pp["rgb_to_bgr"]):
+                # If red is blue, swap the channels
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
             ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
             frame = buffer.tobytes()
             yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            
     except GeneratorExit:  # Client disconnected
         global streaming_clients
         streaming_clients -= 1

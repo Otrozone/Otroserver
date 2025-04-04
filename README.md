@@ -11,3 +11,8 @@ To make the scripts executable:
 ```
 sudo chmod +x *.sh
 ```
+
+## Tested environments
+Tested on 
+* Raspberry Pi 5 with Raspberry Pi Camera V2.1 (CSI ribbon)
+* Raspberry Pi 4B with Genius USB Camera
