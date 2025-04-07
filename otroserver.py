@@ -1,6 +1,9 @@
 # GPIO control
 # http://hostname:5005/gpio/set?pin=6&state=HIGH
 
+# WOL
+# http://hostname:5005/wol/send?mac=00:11:22:33:44:55
+
 # Camera feed (can be used for Octoprint)
 # http://otrozone:5005/camera_feed
 
