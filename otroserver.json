@@ -2,14 +2,14 @@
   "camera": {
     "comment1": "The capture resolution may affect the cameara's field of view",
     "comment2": "You may try to run `v4l2-ctl --list-formats-ext` to see the supported resolutions",
-    "capture_width": 1920,
-    "capture_height": 1080,
+    "capture_width": 1280,
+    "capture_height": 720,
     "capture_format": "RGB888"
   },
   "postprocessing": {
-    "resize": true,
+    "resize": false,
     "resize_width": 640,
-    "resize_height": 480,
+    "resize_height": 360,
     "rgb_to_bgr": true,
     "comment1": "Sometimes the capture_format does not match the camera's output format and colors are wrong, use `rgb_to_bgr = true` to change color channels.",
     "jpeg_quality": 60
