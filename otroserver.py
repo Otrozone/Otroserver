@@ -13,7 +13,6 @@
 
 
 from flask import Flask, request, jsonify, send_from_directory, Response
-from flask_cors import CORS
 from picamera2 import Picamera2
 from gpiozero import LED
 import cv2
@@ -22,9 +21,31 @@ import struct
 from otroconfig import otroconfig
 
 app = Flask(__name__)
-# CORS(app) # Allow all endpoints
-CORS(app, resources={r"/*": {"origins": "*"}})
-# CORS(app, resources={r"/camera_feed": {"origins": "*"}})
+
+
+def get_cors_headers():
+    headers_cfg = otroconfig.get("headers", {})
+    cors_headers = headers_cfg.get("cors")
+    if isinstance(cors_headers, dict):
+        return cors_headers
+    return None
+
+
+@app.before_request
+def handle_preflight():
+    cors_headers = get_cors_headers()
+    if cors_headers and request.method == "OPTIONS":
+        return app.make_default_options_response()
+
+
+@app.after_request
+def add_configured_headers(response):
+    cors_headers = get_cors_headers()
+    if cors_headers:
+        for header_name, header_value in cors_headers.items():
+            if header_value is not None:
+                response.headers[header_name] = str(header_value)
+    return response
 
 # Keep the instances, so it keeps its state (HIGH/LOW) active
 # and do not restarts the states when the instance is released
@@ -166,4 +187,10 @@ def wol_send():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5005)
+    server_cfg = otroconfig.get("server", {})
+    host = server_cfg.get("host", "0.0.0.0")
+    try:
+        port = int(server_cfg.get("port", 5005))
+    except (TypeError, ValueError):
+        port = 5005
+    app.run(host=host, port=port)

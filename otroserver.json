@@ -1,16 +1,27 @@
 {
+  "server": {
+    "host": "0.0.0.0",
+    "port": 5005
+  },
+  "headers": {
+    "cors": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    }
+  },
   "camera": {
     "comment1": "The capture resolution may affect the cameara's field of view",
     "comment2": "You may try to run `v4l2-ctl --list-formats-ext` to see the supported resolutions",
-    "capture_width": 1280,
-    "capture_height": 720,
+    "capture_width": 1640,
+    "capture_height": 1232,
     "capture_format": "RGB888"
   },
   "postprocessing": {
     "resize": false,
     "resize_width": 640,
-    "resize_height": 360,
-    "rgb_to_bgr": true,
+    "resize_height": 480,
+    "rgb_to_bgr": false,
     "comment1": "Sometimes the capture_format does not match the camera's output format and colors are wrong, use `rgb_to_bgr = true` to change color channels.",
     "jpeg_quality": 60
   }
