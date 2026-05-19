@@ -116,10 +116,6 @@ def camera_feed():
 def camera():
     return send_from_directory('static', 'camera.html')
 
-@app.route('/gpio/switches')
-def serve_static_html():
-    return send_from_directory('static', 'switches.html')
-
 @app.route('/gpio/get', methods=['GET'])
 def gpio_get():
     pin = int(request.args.get('pin'))
